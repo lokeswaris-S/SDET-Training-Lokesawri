@@ -1,0 +1,193 @@
+package com.moolya.Programs;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+// Book class
+class Book {
+    private String title;
+    private String author;
+    private boolean isIssued;
+
+    public Book(String title, String author) {
+        this.title = title;
+        this.author = author;
+        this.isIssued = false;
+    }
+
+    public String getTitle() { return title; }
+    public boolean isIssued() { return isIssued; }
+    public void setIssued(boolean issued) { this.isIssued = issued; }
+
+    public void displayBook() {
+        System.out.println("Title: " + title + ", Author: " + author + 
+            (isIssued ? " (Issued)" : " (Available)"));
+    }
+}
+
+// Member class
+class Member {
+    private String name;
+    private String memberId;
+    private ArrayList<Book> borrowedBooks;
+    private ArrayList<LocalDate> borrowDates;
+
+    public Member(String name, String memberId) {
+        this.name = name;
+        this.memberId = memberId;
+        borrowedBooks = new ArrayList<>();
+        borrowDates = new ArrayList<>();
+    }
+
+    public void borrowBook(Book book) {
+        if (!book.isIssued()) {
+            borrowedBooks.add(book);
+            borrowDates.add(LocalDate.now());
+            book.setIssued(true);
+            System.out.println(name + " borrowed: " + book.getTitle());
+        } else {
+            System.out.println(book.getTitle() + " is already issued.");
+        }
+    }
+
+    public void returnBook(Book book) {
+        int index = borrowedBooks.indexOf(book);
+        if (index >= 0) {
+            LocalDate issueDate = borrowDates.get(index);
+            long days = ChronoUnit.DAYS.between(issueDate, LocalDate.now());
+            double fine = (days > 14) ? (days - 14) * 5 : 0;
+            borrowedBooks.remove(index);
+            borrowDates.remove(index);
+            book.setIssued(false);
+            System.out.println(name + " returned: " + book.getTitle() + " | Fine: " + fine);
+        } else {
+            System.out.println(name + " did not borrow: " + book.getTitle());
+        }
+    }
+
+    public void showDetails() {
+        System.out.println("Member: " + name + ", ID: " + memberId);
+        System.out.println("Borrowed Books:");
+        for (Book b : borrowedBooks) System.out.println("- " + b.getTitle());
+    }
+
+    public String getMemberId() { return memberId; }
+}
+
+// Library class
+class Library {
+    private ArrayList<Book> books;
+    private ArrayList<Member> members;
+
+    public Library() {
+        books = new ArrayList<>();
+        members = new ArrayList<>();
+    }
+
+    public void addBook(Book book) { books.add(book); }
+    public void removeBook(String title) {
+        boolean removed = books.removeIf(b -> b.getTitle().equalsIgnoreCase(title));
+        System.out.println(removed ? "Book removed: " + title : "Book not found: " + title);
+    }
+
+    public void addMember(Member member) { members.add(member); }
+
+    public Book findBook(String title) {
+        for (Book b : books) if (b.getTitle().equalsIgnoreCase(title)) return b;
+        return null;
+    }
+
+    public Member findMember(String memberId) {
+        for (Member m : members) if (m.getMemberId().equalsIgnoreCase(memberId)) return m;
+        return null;
+    }
+
+    public void showAllBooks() {
+        System.out.println("----- Books -----");
+        for (Book b : books) b.displayBook();
+    }
+
+    public void showAllMembers() {
+        System.out.println("----- Members -----");
+        for (Member m : members) m.showDetails();
+    }
+}
+
+// Main class with menu
+public class LibraryManagmentSystem {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Library library = new Library();
+
+        while (true) {
+            System.out.println("\nLibrary Menu:");
+            System.out.println("1. Add Book");
+            System.out.println("2. Remove Book");
+            System.out.println("3. Register Member");
+            System.out.println("4. Issue Book");
+            System.out.println("5. Return Book");
+            System.out.println("6. Show All Books");
+            System.out.println("7. Show All Members");
+            System.out.println("8. Exit");
+            System.out.print("Enter choice: ");
+            int choice = sc.nextInt();
+            sc.nextLine(); // consume newline
+
+            switch (choice) {
+                case 1 -> {
+                    System.out.print("Enter book title: ");
+                    String title = sc.nextLine();
+                    System.out.print("Enter author name: ");
+                    String author = sc.nextLine();
+                    library.addBook(new Book(title, author));
+                    System.out.println("Book added.");
+                }
+                case 2 -> {
+                    System.out.print("Enter book title to remove: ");
+                    String title = sc.nextLine();
+                    library.removeBook(title);
+                }
+                case 3 -> {
+                    System.out.print("Enter member name: ");
+                    String name = sc.nextLine();
+                    System.out.print("Enter member ID: ");
+                    String id = sc.nextLine();
+                    library.addMember(new Member(name, id));
+                    System.out.println("Member registered.");
+                }
+                case 4 -> {
+                    System.out.print("Enter member ID: ");
+                    String id = sc.nextLine();
+                    Member m = library.findMember(id);
+                    if (m == null) { System.out.println("Member not found."); break; }
+                    System.out.print("Enter book title to issue: ");
+                    String title = sc.nextLine();
+                    Book b = library.findBook(title);
+                    if (b == null) System.out.println("Book not found.");
+                    else m.borrowBook(b);
+                }
+                case 5 -> {
+                    System.out.print("Enter member ID: ");
+                    String id = sc.nextLine();
+                    Member m = library.findMember(id);
+                    if (m == null) { System.out.println("Member not found."); break; }
+                    System.out.print("Enter book title to return: ");
+                    String title = sc.nextLine();
+                    Book b = library.findBook(title);
+                    if (b == null) System.out.println("Book not found.");
+                    else m.returnBook(b);
+                }
+                case 6 -> library.showAllBooks();
+                case 7 -> library.showAllMembers();
+                case 8 -> {
+                    System.out.println("Exiting...");
+                    sc.close();
+                    return;
+                }
+                default -> System.out.println("Invalid choice, try again.");
+            }
+        }
+    }
+}
